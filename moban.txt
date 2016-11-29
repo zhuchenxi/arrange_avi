@@ -1,0 +1,1176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-tw" lang="zh-tw">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>AV List v2.15</title>
+
+		<script type="text/javascript">
+		<!--
+		var user_regex_str = [];
+		user_regex_str[0] = "<編號> <演員> <片商> （<片名>）";
+		user_regex_str[1] = "<編號> <演員> （<片名>）";
+		user_regex_str[2] = "<編號> <演員> <片商>";
+		user_regex_str[3] = "<編號> <演員>";
+		user_regex_str[4] = "[<發售日>](<片商>)(<編號>)<演員> - <片名>";
+		user_regex_str[5] = "[<發售日>](<片商>)(<編號>)<片名>";
+		user_regex_str[6] = "[<發售日>](<編號>)<演員> - <片名>";
+		user_regex_str[7] = "[<發售日>](<編號>)<片名>";
+		user_regex_str[8] = "(<片商>)(<編號>)<演員> - <片名>";
+		user_regex_str[9] = "(<片商>)(<編號>)<片名>";
+		user_regex_str[10] = "(<編號>)<演員> - <片名>";
+		user_regex_str[11] = "(<編號>)<片名>";
+		var url = [];
+		###urls###
+		var user_mode = 0;
+		var user_order = 0;
+		var user_items_per_page = 30;
+
+		function getElementsByClass(searchClass, domNode, tagName) {
+			if (domNode == null) domNode = document;
+			if (tagName == null) tagName = '*';
+			var el = new Array();
+			var tags = domNode.getElementsByTagName(tagName);
+			var tcl = " "+searchClass+" ";
+			for(i=0,j=0; i<tags.length; i++) {
+				var test = " " + tags[i].className + " ";
+				if (test.indexOf(tcl) != -1)
+					el[j++] = tags[i];
+			}
+			return el;
+		}
+
+		function showHideDiv(classname) {
+			//var elements=document.getElementsByClassName(classname);   //Works fine in Firefox, but not in IE8.
+			var elements=getElementsByClass(classname);
+			for (var i = 0; i < elements.length; i++) {
+				var HideMenu=elements[i];
+				if(HideMenu.style.display=='block') {
+					HideMenu.style.display='none';
+					display_info = 0;
+				}
+				else{
+					HideMenu.style.display='block';
+					display_info = 1;
+				}
+			}
+		}
+
+		function showHideDiv1(id) {
+			var HideMenu=document.getElementById(id);
+				if(HideMenu.style.display=='block'){
+					HideMenu.style.display='none';
+			}
+			else{
+					HideMenu.style.display='block';
+			}
+		}
+
+		function showHideLayers(id,v) {
+			if(v=="show") document.getElementById(id).style.visibility="visible";
+			else if(v=="hide")	document.getElementById(id).style.visibility="hidden";
+		}
+
+		function scaleImgSize(img,w,h) {
+			if(img.width/img.height >= w/h)
+				img.width=w;
+			else
+				img.height=h;
+		}
+
+		function randomPlay() {
+			var random_no = Math.floor(Math.random()*url.length);
+			getVideoInfo(random_no);
+			if(num != '')
+				document.form_search.sw.value=num;
+			else if(title != '')
+				document.form_search.sw.value=title;
+			else
+				document.form_search.sw.value=filename;
+			playVideo(random_no);
+		}
+
+		function playVideo(i) {
+			window.location.href = url[i].replace(/#/g,"%23");
+		}
+
+		function getVideoInfo(i) {
+			title = '';
+			actor = '';
+			num   = '';
+			maker = '';
+			date  = '';
+			genre = '';
+
+			var start = url[i].lastIndexOf("/");
+			var end   = url[i].lastIndexOf(".");
+			var str   = url[i].substring(start+1, end);
+			filename  = str;
+
+			var naming_matched = false;
+			var maximum_folder_levels_to_check = 1; // 0: check the filename only
+			var current_folder_level_is_checked = -1;
+			do {
+				for(var c=0;c<user_regex_str.length && !naming_matched;c++) {
+					if (user_regex_str[c] != "") {
+						var regex_str = "^" + escapeRegExp(user_regex_str[c]) + "$";
+						var info = [];
+						while (regex_str.match(/\<(.*?)\>/)) {
+							regex_str = regex_str.replace(/\<(.*?)\>/,"(.*?)");
+							if(info.length < 9)
+								info.push(RegExp.$1);
+						}
+						var regex = regex_str;
+						if(str.match(regex)) {
+							naming_matched = true;
+						}
+					}
+				}
+				current_folder_level_is_checked++;
+				if(current_folder_level_is_checked < maximum_folder_levels_to_check && !naming_matched) {
+					end   = start;
+					start = url[i].lastIndexOf("/",end-1);
+					str   = url[i].substring(start+1, end);
+				}
+			} while(current_folder_level_is_checked < maximum_folder_levels_to_check && !naming_matched)
+
+			if (naming_matched) {
+				for (var c=0;c<info.length;c++) {
+					if(info[c] == "title" || info[c] == "片名")
+						title += RegExp["$"+(c+1)];
+					else if(info[c] == "actor" || info[c] == "演員")
+						actor += RegExp["$"+(c+1)];
+					else if(info[c] == "num"   || info[c] == "編號")
+						num += RegExp["$"+(c+1)];
+					else if(info[c] == "maker" || info[c] == "片商")
+						maker += RegExp["$"+(c+1)];
+					else if(info[c] == "date"  || info[c] == "發售日")
+						date += RegExp["$"+(c+1)];
+					else if(info[c] == "genre" || info[c] == "類型")
+						genre += RegExp["$"+(c+1)];
+				}
+				if(current_folder_level_is_checked > 0) {
+					var part_regex = "^" + escapeRegExp(num) + "([-_]?([A-Za-z])|[-_](\\d+))$";
+					if(filename.match(part_regex) && title != '')
+						title += " <i>Part " + (RegExp.$2 || RegExp.$3) + "</i>";
+				}
+			}
+			else {
+				title = filename;
+			}
+		}
+
+		function displayTable(i,sn) {
+			actor = actor.replace(/\s*[&+,、]+\s*/g,"、");
+			genre = genre.replace(/\s*[&+,、]+\s*/g,"、");
+			document.write(
+			  "<tr>"
+			+ "	<td><a href=\"javascript:void(0);\" onclick=\"playVideo("+i+");\">" + sn + "</a></td>"
+			+ "	<td>" + title + "</td>"
+			+ "	<td>" + actor + "</td>"
+			+ "	<td>" + num   + "</td>"
+			+ "	<td>" + maker + "</td>"
+			+ "	<td>" + date  + "</td>"
+			+ "	<td>" + genre + "</td>"
+			+ "</tr>"
+			);
+		}
+
+		function displayBlock(i,sn) {
+			var dir = url[i].substring(0,url[i].lastIndexOf("/")+1).replace(/#/g,"%23");
+
+			// Add links for title
+			title = title.replace(/\(([^\[\]\(\)]+)\)/g, function($0, $1) {if (search_words==$1) return "("+$1+")"; else return "(<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + $1 + "', '');\">" + $1 + "</a>)";} );
+			title = title.replace(/\[([^\[\]\(\)]+)\]/g, function($0, $1) {if (search_words==$1) return "["+$1+"]"; else return "[<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + $1 + "', '');\">" + $1 + "</a>]";} );
+
+			// Add links for actor
+			var actor_array = actor.split(/\s*[&+,、]+\s*/);
+			actor = addSearchLinksForInfoBlock(actor_array);
+
+			// Add links for maker
+			var maker_array = [maker];
+			maker = addSearchLinksForInfoBlock(maker_array);
+
+			// Add links for date
+			date  = date.replace(/(\d{4})/, function($0, $1) {if (search_words==$1) return $1; else return "<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + $1 + "', '');\">" + $1 + "</a>";} );
+
+			// Add links for genre
+			var genre_array = genre.split(/\s*[&+,、]+\s*/);
+			genre = addSearchLinksForInfoBlock(genre_array);
+
+			// Display information
+			document.write("		<div id=\"sn"+sn+"\" class=\"block\">");
+			if(current_mode == 0) {
+				document.write("			<div class=\"img_block\" onmouseover=\"showHideLayers('Layer"+i+"','show')\" onmouseout=\"showHideLayers('Layer"+i+"','hide')\">");
+				document.write("				<a href=\"#sn"+sn+"\"><img id=\"img_s"+sn+"\" alt=\"預覽圖\" /></a>");
+			}
+			else {
+				document.write("			<div class=\"img_block\" onclick=\"showHideLayers('Layer"+i+"','show')\" onmouseout=\"showHideLayers('Layer"+i+"','hide')\">");
+				document.write("				<img id=\"img_s"+sn+"\" alt=\"預覽圖\" />");
+			}
+			document.write("			</div>");
+			document.write("			<div id=\"Layer"+i+"\" class=\"position_centered_box img_centered_box\">");
+			document.write("				<img id=\"img_l"+sn+"\" alt=\"預覽圖\" onLoad=\"scaleImgSize(this,800,600);\" onclick=\"showHideLayers('Layer"+i+"','hide')\" onmouseover=\"showHideLayers('Layer"+i+"','show')\" onmouseout=\"showHideLayers('Layer"+i+"','hide')\" />");
+			document.write("			</div>");
+			document.write("			<div class=\"info_block\">");
+			document.write("				<p><b>流水號：</b>"+sn+"</p>");
+			if(title != "") document.write("				<p><b>片名：</b>"+title+"</p>");
+			if(actor != "") document.write("				<p><b>演員：</b>"+actor+"</p>");
+			if(num   != "") document.write("				<p><b>編號：</b>"+num+"</p>");
+			if(maker != "") document.write("				<p><b>片商：</b>"+maker+"</p>");
+			if(date  != "") {
+				if(date.match(/^\d{4}$|>\d{4}<\/a>$/))
+					document.write("				<p><b>年份：</b>"+date+"</p>");
+				else
+					document.write("				<p><b>發售日：</b>"+date+"</p>");
+			}
+			if(genre != "") document.write("				<p><b>類型：</b>"+genre+"</p>");
+			document.write("			</div>");
+			document.write("			<div class=\"link_block\">");
+			document.write("				<div class=\"n2\"><a href=\"javascript:void(0);\" onclick=\"playVideo("+i+");\">開啟影片</a></div>");
+			document.write("				<div class=\"n2\"><a href=\""+dir+".\" target=\"_blank\">開啟目錄</a></div>");
+			document.write("			</div>");
+			document.write("		</div >");
+
+			// Add image paths
+			var images = [];
+			images[0] = dir + filename.replace(/#/g,"%23") + ".jpg";
+			images[1] = dir + num.replace(/#/g,"%23") + ".jpg";
+			images[2] = dir + "cover.jpg";
+			images[3] = dir + "folder.jpg";
+
+			// Load images
+			load_img("img_s"+sn, new Image(), images, 0);
+			load_img("img_l"+sn, new Image(), images, 0);
+		}
+
+		function addSearchLinksForInfoBlock (arr) {
+			var s_str = "";
+			for(var i=0;i<arr.length;i++) {
+				if(arr[i] != '') {
+					if(search_words == arr[i])
+						s_str += arr[i]
+					else
+						s_str += "<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + arr[i] + "', '');\">" + arr[i] + "</a>";
+					if(i<arr.length-1)
+						s_str += "｜";
+				}
+			}
+			return s_str;
+		}
+
+		function load_img(imgId, image, images, index) {
+			if(images.length > index)
+			{
+				image.onerror = function() {
+					load_img(imgId, this, images, index+1);
+				}
+				image.onload  = function() {
+					var element = document.getElementById(imgId);
+					if (element) {
+					element.src = this.src;
+					}
+				}
+				image.src = images[index];
+			}
+		}
+
+		function escapeRegExp(str) {
+			return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+		}
+
+		function onSelectSubmit(s) {
+			goToLinkWithParameters (search_words,s);
+		}
+
+		function displayNextPreviousPage() {
+			if(total_pages>1) {
+				document.write("<div style=\"float:right;\">");
+				document.write("<select onchange=onSelectSubmit(this.options[this.options.selectedIndex].value); name=page>");
+				for(i=1;i<=total_pages;i++) {
+					document.write("<option value="+i);
+					if(i==current_page) {
+						document.write(" selected");
+					}
+					document.write(">"+i+"</option>");
+				}
+				document.write("</select></div>");
+
+				if(current_page<total_pages) {
+					document.write("<div style=\"float:right;\"><a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + search_words + "'," + (current_page+1) + ");\">下一頁</a>&nbsp;&nbsp;</div>");
+				}
+				if(current_page>1) {
+					document.write("<div style=\"float:right;\"><a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + search_words + "'," + (current_page-1) + ");\">上一頁</a>&nbsp;&nbsp;</div>");
+				}
+			}
+		}
+
+		function displayConfigOptions() {
+			if(url.length > 0) {
+					document.write("<div class=\"n1\">");
+					document.write("	<a href=\"javascript:void(0);\" onclick=\"if(current_order==0)current_order=1;else current_order=0;goToLinkWithParameters(search_words,current_page);\">");
+					if (current_order == 1)
+						document.write("遞減排序");
+					else
+						document.write("遞增排序");
+					document.write("</a></div>");
+
+					document.write("<div class=\"n1\">");
+					document.write("	<a href=\"javascript:void(0);\" onclick=\"switchmode();\">");
+					if (current_mode == 1)
+						document.write("圖片模式");
+					else if (current_mode == 2)
+						document.write("文字模式");
+					else
+						document.write("詳細模式");
+					document.write("</a></div>");
+
+					if (current_mode == 1) {
+						document.write("<div class=\"n1\">");
+						document.write("	影片資訊：<a href=\"javascript:void(0);\" onclick=\"showHideDiv('info_block');\">顯示/隱藏</a>");
+						document.write("</div>");
+					}
+			}
+		}
+
+		function displaybar() {
+			document.write("<div class=\"displaybar\">");
+			if(search_words == "") {
+				document.write("<div style=\"float:left;\"><b>所有影片</b></div>");
+
+				document.write("<div style=\"float:right;\">");
+				if(url.length>0)
+					document.write("第"+first_item_of_this_page+"-"+last_item_of_this_page+"部，");
+				document.write("共<b>"+url.length+"</b>部影片。");
+				document.write("</div>");
+			}
+			else {
+				document.write("<div style=\"float:left\">搜尋所有關於</div>");
+				document.write("<div style=\"float:left;max-width:400px;\" class=\"clipped\"><b>" + search_words + "</b></div>");
+				document.write("<div style=\"float:left\">的影片</div>");
+
+				document.write("<div style=\"float:right;\">");
+				if(video_matched.length>0)
+					document.write("第"+first_item_of_this_page+"-"+last_item_of_this_page+"部，");
+				document.write("共<b>"+video_matched.length+"</b>部影片。");
+				document.write("</div>");
+			}
+			document.write("</div>");
+		}
+
+		function searchMatchedVideo(array_search_words, url) {
+			var video_matched = [];
+			for(var i=0;i<url.length;i++)
+			{
+				var matched = true;
+				for(var j=0;j<array_search_words.length&&matched;j++) {
+					if(array_search_words[j].match(/^-?(title|actor|num|maker|date|genre):.+/)) {
+						getVideoInfo(i);
+						var asw_tmp = new RegExp(array_search_words[j].replace(/^-?(title|actor|num|maker|date|genre):/, ""), 'i');
+						if(array_search_words[j].match(/^title:/) && !title.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^actor:/) && !actor.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^num:/) && !num.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^maker:/) && !maker.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^date:/) && !date.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^genre:/) && !genre.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-title:/) && title.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-actor:/) && actor.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-num:/) && num.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-maker:/) && maker.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-date:/) && date.match(asw_tmp))
+							matched = false;
+						else if(array_search_words[j].match(/^-genre:/) && genre.match(asw_tmp))
+							matched = false;
+					}
+					else if(array_search_words[j].match(/^-.+/)) {
+						var asw_tmp = new RegExp(array_search_words[j].replace(/^-/, ""), 'i');
+						if(url[i].match(asw_tmp))
+							matched = false;
+					}
+					else {
+						var asw_tmp = new RegExp(array_search_words[j], 'i');
+						if(!url[i].match(asw_tmp))
+							matched = false;
+					}
+				}
+				if(matched) video_matched.push(i);
+			}
+			return video_matched;
+		}
+
+		function trimString(str) {
+			str=str.replace(/[$^&*(){}<>",;=?`、]/g," ");
+			str=str.replace(/\+|\\|\/|\||\[|\]/g, " ");
+			str=str.replace(/^\s+/,"");
+			str=str.replace(/\s+$/,"");
+			str=str.replace(/\s{2,}/g," ");
+			return str;
+		}
+
+		function getUrlPram() {
+			var str_param;
+			var param_arg;
+			var iParam;
+
+			str_param=document.location.search;
+			if (str_param=="") return;
+
+			if(str_param.charAt(0)=="?") str_param=str_param.substring(1,str_param.length);
+			param_arg=str_param.split("&");
+
+			for(iParam=0;iParam<param_arg.length;iParam++) {
+				param_arg_values=param_arg[iParam].split("=");
+				param_name=unescape(param_arg_values[0]);
+
+				switch (param_name) {
+					case "sw":
+						search_words=decodeURIComponent(param_arg_values[1]);
+						break;
+					case "page":
+						current_page=param_arg_values[1];
+						break;
+					case "info":
+						display_info=param_arg_values[1];
+						break;
+					case "mode":
+						current_mode=param_arg_values[1];
+						break;
+					case "order":
+						current_order=param_arg_values[1];
+						break;
+				}
+			}
+		}
+
+		function testKeyCode(e) {
+			var keycode;
+			if (window.event) keycode = window.event.keyCode;
+			else if (e) keycode = e.which;
+			var e = e || window.event;
+
+			//Don't enable shortcut keys in Input, Textarea fields
+			var element;
+			if(e.target) element=e.target;
+			else if(e.srcElement) element=e.srcElement;
+			if(element.nodeType==3) element=element.parentNode;
+			if(element.tagName == 'INPUT' || element.tagName == 'TEXTAREA') return;
+
+			if(keycode==88 && current_page>1){//Previous Page: X
+				goToLinkWithParameters (search_words,current_page-1);
+			}
+			if(keycode==67 && current_page<total_pages){//Next Page: C
+				goToLinkWithParameters (search_words,current_page+1);
+			}
+			if(keycode==90 && current_page>1){//First Page: Z
+				goToLinkWithParameters (search_words,1);
+			}
+			if(keycode==86 && current_page<total_pages){//Last Page: V
+				goToLinkWithParameters (search_words,total_pages);
+			}
+			if(keycode==82){//Random Play: R
+				randomPlay();
+			}
+			if(keycode==70){//Show or Hide Search Suggestion: F
+				showHideDiv1('searchsuggestion_box');
+				displaySearchSuggestion();
+			}
+			if(keycode==68){//Display All Videos: D
+				if(search_words != "")
+					goToLinkWithParameters("","");
+			}
+			if(keycode==83){// Show or Hide Video Info: S
+				if(current_mode == 1)
+					showHideDiv('info_block');
+			}
+			if(keycode==65){// Switch mode: A
+				switchmode();
+			}
+		}
+
+		function switchmode() {
+			if(current_mode == 0)
+				current_mode = 1;
+			else if(current_mode == 1)
+				current_mode = 2;
+			else
+				current_mode = 0;
+			goToLinkWithParameters(search_words,current_page);
+		}
+
+		function goToLinkWithParameters(sw,page) {
+			var link = "?";
+			if (sw != "") link += "sw="+ encodeURIComponent(sw);
+			if (page != "") link += "&page=" + page;
+			link += "&info=" + display_info + "&mode=" + current_mode + "&order=" + current_order;
+			window.location.href = link;
+		}
+		
+		function sort_map(obj) {
+			var keys = []; 
+			for(var key in obj) keys.push(key);
+    		return keys.sort(function(a,b){return obj[b]-obj[a]});
+		}
+
+		function displaySearchSuggestion() {
+			if(document.getElementById('searchsuggestion_box').innerHTML == "") {
+				if(url.length > 0) {
+					var actor_array = [], maker_array=[], year_array = [], genre_array = [], other_array = [];
+					
+					var actor_map = {}
+					for(var i=0;i<url.length;i++) {
+						getVideoInfo(i);
+
+						if(actor != "") {
+							var actors = actor.split(/\s*[&+,、]+\s*/);
+							for(var j in actors) {
+								if (! (actors[j] in actor_map)) {
+									actor_map[actors[j]] = 0
+								}
+								actor_map[actors[j]] += 1
+								if (actors[j] == "单星") {
+									actor_map[actors[j]] = 0
+								}
+								if (actors[j] == "群星") {
+									actor_map[actors[j]] = 0
+								}
+							}
+							//actor_array = actor_array.concat(actors);
+						}
+						if(maker != "") {
+							maker_array.push(maker);
+						}
+						if(date != "") {
+							var year = date.match(/\d{4}/);
+							if (year != null)
+								year_array.push(year);
+						}
+						if(genre != "") {
+							var genres = genre.split(/\s*[&+,、]+\s*/);
+							genre_array = genre_array.concat(genres);
+						}
+						if(title != "") {
+							var others = title.match(/\(([^\[\]\(\)]+)\)|\[([^\[\]\(\)]+)\]/g);
+							if(others != null)
+								other_array = other_array.concat(others);
+						}
+					}
+					//console.log(actor_map)
+					
+					actor_array = sort_map(actor_map)
+					
+					//console.log(actor_array)
+
+					if(actor_array.length == 0 && maker_array.length == 0 && year_array.length == 0 && genre_array.length == 0 && other_array.length == 0) {
+						document.getElementById('searchsuggestion_box').innerHTML = "無";
+					}
+					else {
+						for(var i=0; i < other_array.length; i++) {
+							other_array[i] = other_array[i].replace(/\(|\)|\[|\]/g, '');
+						}
+
+						//actor_array = eliminateDuplicates(actor_array).sort();
+						maker_array = eliminateDuplicates(maker_array).sort();
+						year_array  = eliminateDuplicates(year_array).sort();
+						genre_array = eliminateDuplicates(genre_array).sort();
+						other_array = eliminateDuplicates(other_array).sort();
+
+						other_array = diffArray(other_array,actor_array);
+						other_array = diffArray(other_array,maker_array);
+						other_array = diffArray(other_array,year_array);
+						other_array = diffArray(other_array,genre_array);
+
+						var searchsuggestion_box_html = "";
+						if(actor_array.length > 0) searchsuggestion_box_html += "<div style=\"overflow:auto\"><u><b>演員</b></u><br />" + addSearchLinksActor (actor_array) + "</div>";
+						if(maker_array.length > 0) searchsuggestion_box_html += "<div style=\"overflow:auto\"><u><b>片商</b></u><br />" + addSearchLinks (maker_array) + "</div>";
+						if(year_array.length > 0) searchsuggestion_box_html += "<div style=\"overflow:auto\"><u><b>年份</b></u><br />" + addSearchLinks (year_array) + "</div>";
+						if(genre_array.length > 0) searchsuggestion_box_html += "<div style=\"overflow:auto\"><u><b>類型</b></u><br />" + addSearchLinks (genre_array) + "</div>";
+						if(other_array.length > 0) searchsuggestion_box_html += "<div style=\"overflow:auto\"><u><b>其他</b></u><br />" + addSearchLinks (other_array) + "</div>";
+						document.getElementById('searchsuggestion_box').innerHTML = searchsuggestion_box_html;
+					}
+				}
+				else {
+					document.getElementById('searchsuggestion_box').innerHTML = "無";
+				}
+			}
+		}
+
+		function addSearchLinks (arr) {
+			var s_str = "";
+			for(var i=0;i<arr.length;i++) {
+				if(arr[i] != '') {
+					s_str += "<div style=\"float:left;width:14.285%;height:20px;\" class=\"clipped\">";
+					if(search_words == arr[i])
+						s_str += "<b>" + arr[i] + "</b>";
+					else
+						s_str += "<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + arr[i] + "', '');\">" + arr[i] + "</a>";
+					s_str += "</div>";
+				}
+			}
+			return s_str;
+		}
+		
+		function addSearchLinksActor (arr) {
+			var s_str = "";
+			for(var i=0;i<arr.length;i++) {
+				if(arr[i] != '') {
+					s_str += "<div style=\"float:left;width:14.285%;height:140px;\" class=\"clipped\">";
+					if(search_words == arr[i])
+						s_str += "<b>" + arr[i] + "</b><br />";
+					else
+						s_str += "<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('" + arr[i] + "', '');\">" + arr[i] + "</a><br />";
+					my_uri = "file:///F:/aaa/头像图片/" + arr[i] +".jpg"
+					s_str += "<img src=\"" + my_uri + "\">"
+					s_str += "</div>";
+				}
+			}
+			return s_str;
+		}
+
+		function eliminateDuplicates(arr) {
+			var i;
+			var len=arr.length;
+			var out=[];
+			var obj={};
+
+			for (i=0;i<len;i++) {
+				if (!obj[arr[i]]) {
+					obj[arr[i]]={};
+					out.push(arr[i]);
+				}
+			}
+			return out;
+		}
+
+		// diffArray(a, b) returns the result of the subtraction method applied to sets (mathematical concept).
+		function diffArray(a, b) {
+			var seen = [], diff = [];
+			for ( var i = 0; i < b.length; i++)
+				seen[b[i]] = true;
+			for ( var i = 0; i < a.length; i++)
+				if (!seen[a[i]])
+					diff.push(a[i]);
+			return diff;
+		}
+
+		//========================================================================//
+		var search_words  = "";
+		var current_page  = 1; // current page number
+		var display_info  = 0; // 0: hide, 1: show video info for image mode
+		var current_mode  = user_mode; // 0: detail, 1: image, 2: text.
+		var current_order = user_order; // 0: ascending, 1: descending.
+		getUrlPram();
+
+		var items_per_page = user_items_per_page;
+		var total_pages    = Math.ceil(url.length/items_per_page);
+
+		display_info = parseInt(display_info);
+		if(display_info != 1) display_info = 0;
+		current_mode = parseInt(current_mode);
+		if(current_mode > 2) current_mode = 0;
+		current_order = parseInt(current_order);
+		if(current_order == 1) 	url.reverse();
+
+		search_words = trimString(search_words);
+		if(search_words != "") {
+			var array_search_words = search_words.split(' ');
+			var video_matched =	searchMatchedVideo(array_search_words, url);
+			total_pages = Math.ceil(video_matched.length/items_per_page);
+		}
+
+		current_page = parseInt(current_page);
+		if(current_page<=0 || current_page>total_pages) current_page=1;
+
+		var first_item_of_this_page = (current_page-1)*items_per_page+1;
+		var last_item_of_this_page  = current_page*items_per_page;
+
+		if(search_words != "") {
+			if(last_item_of_this_page > video_matched.length) last_item_of_this_page = video_matched.length;
+		}
+		else {
+			if(last_item_of_this_page > url.length) last_item_of_this_page = url.length;
+		}
+
+		var isCtrl = false;
+		document.onkeyup   = function(e){ var e = e || window.event; if(e.keyCode == 17 || e.which == 17) isCtrl=false; }
+		document.onkeydown = function(e){ var e = e || window.event; if(e.keyCode == 17 || e.which == 17) isCtrl=true; if(!isCtrl) testKeyCode(e); }
+		//========================================================================//
+		-->
+		</script>
+
+		<style type="text/css">
+		html {
+			padding:0px;
+			margin:0px;
+		}
+		body {
+			background-color:#fafffd;
+			font-size:13px;
+			font-family:Verdana;
+			color:#564b47;
+			padding:0px 20px;
+			margin:0px;
+		}
+		#container {
+			width:950px;
+			margin:auto;
+		}
+		#top, #bottom {
+			width:950px;
+			padding:10px 0px;
+		}
+		#content {
+			width:942px;
+			padding:3px;
+			background-color:#fff;
+			border:1px solid silver;
+			box-shadow:0px 0px 8px #888888;
+			overflow:auto;
+		}
+		#top_banner, #bottom_banner { height:50px; }
+		#top_left, #top_right, #top_center { line-height:25px; }
+		#top_left { float:left;font-size:29px;margin-left:10px; }
+		#top_right { float:right; }
+		#top_center { margin:0px auto;width:400px;text-align:center; }
+		#bottom_banner { margin:0px auto;text-align:center; }
+		#bottom_banner a { color:black; }
+
+		#searchsuggestion_box, #explanation_box, #noresult_box, #hotkey_box {
+			border:1px solid #ccc;
+			background-color:#f0f7f9;
+		}
+		#searchsuggestion_box {	width:948px;display:none;overflow:auto;border-top:0px; }
+		#searchsuggestion_box a { color:#564b47;}
+		#searchsuggestion_box a:hover{text-decoration: underline;}
+		#explanation_box {margin:20px auto; width:450px;}
+		#noresult_box { margin:100px auto; width:306px; text-align:center; }
+		#hotkey_box { width:100px; display:none; }
+
+		#go_to_top {
+			position:fixed;
+			bottom:4px;
+			right:4px;
+			width:50px;
+			padding:4px;
+			border:1px solid #ccc;
+			background:#f7f7f7;
+			text-align:center;
+		}
+		#go_to_top a { color:#564b47; }
+
+		.pagebar {
+			border: solid #ccc 1px;
+			height:20px;
+			line-height:20px;
+		}
+		.block, .displaybar {
+			border-radius:3px;
+			float:left;
+			margin:2px;
+			border:1px solid silver;
+			padding:3px;
+		}
+		.displaybar {
+			width:930px;height:20px;overflow:hidden;line-height:20px;
+		}
+		.block{
+			width:302px;text-align:center; overflow:auto;
+		}
+		.img_block, .info_block, .link_block {
+			border:1px solid #6b90da;
+			background-color:#f0f7f9;
+			width:300px;
+			margin:1px 0px;
+			float:left;
+		}
+		.img_block {
+			height:200px;
+			overflow:hidden;
+		}
+		.img_block img {
+			height:200px;
+			border-width:0px;
+		}
+		.info_block {
+			height:104px;
+			text-align:left;
+			display:none;
+			overflow:auto;
+		}
+		.info_block p {
+			margin:0px;
+		}
+		.info_block a { color:#564b47; }
+		.info_block a:hover{text-decoration: underline;}
+
+		.link_block {
+			height: 28px;
+		}
+		.n1 {
+			float:right;
+			padding:2px;margin:0px 2px;
+			border-radius:3px;
+			background-color:#fff8dc;
+			border:1px solid #B42222;
+		}
+		.n2 {
+			padding:2px;margin:2px auto;
+			border-radius:3px;
+			border:1px solid #6b90da;
+			background-color:#f0f7f9;
+			width:60px;
+			height:18px;
+			display: inline-block;
+		}
+		.n2 a { color:#564b47; }
+		.n2 a:hover{color:blue; }
+		.n2 a:active{color:#6b90da; }
+		a { outline:none;text-decoration:none; }
+
+		.position_centered_box, .img_centered_box {
+			width:818px;
+			height:618px;
+		}
+		.position_centered_box {
+			position:fixed;
+			top:50%;
+			left:50%;
+			margin-left:-409px; /* width divided by 2 */
+			margin-top:-309px;  /* height divided by 2 */
+		}
+		.img_centered_box {
+			text-align:center;
+			line-height:616px;
+		}
+		.img_centered_box img {
+			vertical-align:middle;
+
+			/*image size*/
+			/*width and height is defined in javascript function scaleImgSize*/
+
+			/* This adds the border */
+			padding:8px;
+			border:solid;
+			border-color:#dddddd #aaaaaa #aaaaaa #dddddd;
+			border-width:1px;
+			background-color:white;
+		}
+		.clipped {
+			overflow:hidden;
+			white-space:nowrap;
+			text-overflow:ellipsis;
+		}
+
+		input, select {
+			font-family:Verdana;
+			vertical-align:top;
+			background-color:#f0f7f9;
+		}
+		input {
+			border:1px solid #6b90da;
+		}
+		select {
+			border-width: 0 0 0 1px;
+			border-style: solid;
+			border-color: #ccc;
+			height:20px;
+		}
+
+		table {
+			*border-collapse: collapse; /* IE7 and lower */
+			border-spacing: 0;
+			width: 100%;
+		}
+
+		.bordered {
+			border: solid #ccc 1px;
+			-moz-border-radius: 6px;
+			-webkit-border-radius: 6px;
+			border-radius: 6px;
+			-webkit-box-shadow: 0 1px 1px #ccc;
+			-moz-box-shadow: 0 1px 1px #ccc;
+			box-shadow: 0 1px 1px #ccc;
+		}
+
+		.bordered tr:hover {
+			background: #fbf8e9;
+			-o-transition: all 0.1s ease-in-out;
+			-webkit-transition: all 0.1s ease-in-out;
+			-moz-transition: all 0.1s ease-in-out;
+			-ms-transition: all 0.1s ease-in-out;
+			transition: all 0.1s ease-in-out;
+		}
+
+		.bordered td, .bordered th {
+			border-left: 1px solid #ccc;
+			border-top: 1px solid #ccc;
+			padding: 6px;
+			text-align: left;
+		}
+
+		.bordered th {
+			border-top: none;
+			word-break: keep-all;
+		}
+
+		.bordered th, .pagebar {
+			background-color: #dce9f9;
+			background-image: -webkit-gradient(linear, left top, left bottom, from(#f0f7f9), to(#dce9f9));
+			background-image: -webkit-linear-gradient(top, #f0f7f9, #dce9f9);
+			background-image:    -moz-linear-gradient(top, #f0f7f9, #dce9f9);
+			background-image:     -ms-linear-gradient(top, #f0f7f9, #dce9f9);
+			background-image:      -o-linear-gradient(top, #f0f7f9, #dce9f9);
+			background-image:         linear-gradient(top, #f0f7f9, #dce9f9);
+			-webkit-box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+			-moz-box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+			box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+			text-shadow: 0 1px 0 rgba(255,255,255,.5);
+		}
+
+		.bordered td:first-child, .bordered th:first-child {
+			border-left: none;
+		}
+
+		.bordered th:first-child {
+			-moz-border-radius: 6px 0 0 0;
+			-webkit-border-radius: 6px 0 0 0;
+			border-radius: 6px 0 0 0;
+		}
+
+		.bordered th:last-child {
+			-moz-border-radius: 0 6px 0 0;
+			-webkit-border-radius: 0 6px 0 0;
+			border-radius: 0 6px 0 0;
+		}
+
+		.bordered th:only-child{
+			-moz-border-radius: 6px 6px 0 0;
+			-webkit-border-radius: 6px 6px 0 0;
+			border-radius: 6px 6px 0 0;
+		}
+
+		.bordered tr:last-child td:first-child {
+			-moz-border-radius: 0 0 0 6px;
+			-webkit-border-radius: 0 0 0 6px;
+			border-radius: 0 0 0 6px;
+		}
+
+		.bordered tr:last-child td:last-child {
+			-moz-border-radius: 0 0 6px 0;
+			-webkit-border-radius: 0 0 6px 0;
+			border-radius: 0 0 6px 0;
+		}
+		</style>
+		<script type="text/javascript">
+		<!--
+			document.write("<style type=\"text/css\">");
+			for(var i=0; i<url.length;i++)
+				document.write("#Layer"+i+"{overflow:hidden;visibility:hidden;}");
+
+			if(current_mode == 0) {
+				// detail mode
+				document.write(".block {width:930px;}");
+				document.write(".img_block {margin-right:2px;}");
+				document.write(".info_block, .link_block {width:624px;}");
+				document.write(".info_block {font-size:16px;display:block;height:168px;}");
+				document.write(".info_block p {margin:3px;}");
+			}
+			document.write("</style>");
+		-->
+		</script>
+	</head>
+
+	<body>
+	<div id="container">
+		<div id="top">
+			<div id="top_banner">
+				<div id="top_left">
+					<b><i>AV List v2.15</i></b>
+				</div>
+				<div id="top_right">
+					<script type="text/javascript">displayConfigOptions();</script>
+				</div>
+				<div id="top_center">
+					<div>
+						<!-- Search Box HTML Code Begin: -->
+
+						<script type="text/javascript">
+						<!--
+						function killerrors(){return true;}window.onerror = killerrors;
+						function readselection() {document.form_search.sw.value=search_words};
+						function OnSearchSubmit(){var b_return=true;if (document.form_search.sw){for(var i=0;i<document.form_search.sw.value.length;i++){if (document.form_search.sw.value.charAt(i)!=" ")	{b_return=false;break;}}}if (b_return) return;goToLinkWithParameters(document.form_search.sw.value,"");}
+						-->
+						</script>
+
+						<form name="form_search" action="Javascript:OnSearchSubmit()" />
+							<div>
+								<input type="text" name="sw" size="22" />
+								<input type="submit" value="搜尋" />
+								<input type="button" onclick="randomPlay();" value="隨機播放" />
+							</div>
+						</form>
+
+						<script type="text/javascript">	readselection(); </script>
+						<!-- Search Box HTML Code End. -->
+					</div>
+					<div>
+						<script type="text/javascript">
+						<!--
+						if(search_words != "") document.write("<a href=\"javascript:void(0);\" onclick=\"goToLinkWithParameters('','');\">顯示所有影片</a>");
+						-->
+						</script>
+					</div>
+				</div>
+			</div>
+
+			<div class="pagebar">
+				<div style="float:left;">
+					<script type="text/javascript">
+						<!--
+						document.write("<a href=\"javascript:void(0);\" onClick=\"showHideDiv1('searchsuggestion_box');displaySearchSuggestion();\">▼搜尋建議</a>");
+						-->
+					</script>
+				</div>
+				<div style="float:right;">
+					<script type="text/javascript">displayNextPreviousPage();</script>
+				</div>
+			</div>
+
+			<div id="searchsuggestion_box"></div>
+		</div>
+
+		<div id="content">
+			<script type="text/javascript">
+			<!--
+				if(url.length > 0) {
+					displaybar();
+
+					if(search_words == "") {
+						document.write("<div id=\"go_to_top\"><a href=\"#top\">至頂端</a></div>");
+						if(current_mode != 2) {
+							var i=first_item_of_this_page-1;
+							for(i;i<last_item_of_this_page;i++) {
+								getVideoInfo(i);
+								displayBlock(i,i+1);
+							}
+						}
+						else {
+							document.write(
+							  "<div class=\"block\" style=\"width:930px\";>"
+							+ "<table class=\"bordered\">"
+							+ "	<thead>"
+							+ "	<tr>"
+							+ "		<th>#</th>"
+							+ "		<th>片名</th>"
+							+ "		<th>演員</th>"
+							+ "		<th>編號</th>"
+							+ "		<th>片商</th>"
+							+ "		<th>發售日</th>"
+							+ "		<th>類型</th>"
+							+ "	</tr>"
+							+ "</thead>");
+							var i=first_item_of_this_page-1;
+							for(i;i<last_item_of_this_page;i++) {
+								getVideoInfo(i);
+								displayTable(i,i+1);
+							}
+							document.write("</table></div>");
+						}
+					}
+					else {
+						if(video_matched.length > 0) {
+							document.write("<div id=\"go_to_top\"><a href=\"#top\">至頂端</a></div>");
+							if(current_mode != 2) {
+								var j=first_item_of_this_page-1;
+								for(j;j<last_item_of_this_page;j++)	{
+									var i = video_matched[j];
+									getVideoInfo(i);
+									displayBlock(i,j+1);
+								}
+							}
+							else {
+								document.write(
+								  "<div class=\"block\" style=\"width:930px\";>"
+								+ "<table class=\"bordered\">"
+								+ "	<thead>"
+								+ "	<tr>"
+								+ "		<th>#</th>"
+								+ "		<th>片名</th>"
+								+ "		<th>演員</th>"
+								+ "		<th>編號</th>"
+								+ "		<th>片商</th>"
+								+ "		<th>發售日</th>"
+								+ "		<th>類型</th>"
+								+ "	</tr>"
+								+ "</thead>");
+								var j=first_item_of_this_page-1;
+								for(j;j<last_item_of_this_page;j++)	{
+									var i = video_matched[j];
+									getVideoInfo(i);
+									displayTable(i,j+1);
+								}
+								document.write("</table></div>");
+							}
+						}
+						else {
+							document.write("<div id=\"noresult_box\">");
+							document.write("沒有符合搜尋條件的影片。");
+							document.write("</div>");
+						}
+					}
+
+					if(display_info == 1) {
+						showHideDiv('info_block');
+					}
+				}
+				else {
+					document.write("<div id=\"explanation_box\">");
+					document.write("<p><b><u>執行程式之前，請確認程式所搜尋的資料夾底下有影片，並依命名規則將圖片與影片連結正確顯示在網頁中。</u></b></p>");
+					document.write("<ul>");
+					document.write("<p><li>影片或影片所在資料夾的命名方式<br/ ><br/ >預設格式如下，可自訂修改：<ol><li>[發售日](片商)(編號)演員 - 片名</li><li>[發售日](片商)(編號)片名</li><li>[發售日](片商)(編號)</li><li>[發售日](編號)演員 - 片名</li><li>[發售日](編號)片名</li><li>[發售日](編號)</li><li>(片商)(編號)演員 - 片名</li><li>(片商)(編號)片名</li><li>(片商)(編號)</li><li>(編號)演員 - 片名</li><li>(編號)片名</li><li>(編號)</li></ol><br />※若影片和資料夾名稱都符合命名方式，則以影片檔名為主。<br />※若影片和資料夾名稱都不符命名方式，則影片檔名為片名。<br /></li></p>");
+					document.write("<p><li>圖片的命名方式<br/ ><br/ ><ol><li>影片檔名.jpg</li><li>編號.jpg</li><li>cover.jpg</li><li>folder.jpg</li></ol><br />※若有圖片同時符合上列方式之一，則依順序優先顯示。</li></p>");
+					document.write("</ul>");
+					document.write("</div>");
+				}
+			-->
+			</script>
+
+			<noscript>
+				<div class="displaybar" style="height:100px;">
+					<ul>
+						<li><p>若您使用IE，請點選IE瀏覽器工具列 > 工具 > 網際網路選項 > 進階 > 於安全性中將「允許主動式內容在我電腦上的檔案中執行」勾選起來 > 套用 > 重新啟動瀏覽器</p></li>
+						<li><p>若您使用Firefox，請點選Firefox瀏覽器工具列 > 工具 > 選項 > 內容 > 將「啟動Javascript」勾選起來 > 確定</p></li>
+					</ul>
+				</div>
+			</noscript>
+		</div>
+
+		<div id="bottom">
+			<div class="pagebar">
+				<div style="float:right;">
+					<script type="text/javascript">displayNextPreviousPage();</script>
+				</div>
+
+				<script type="text/javascript">
+					<!--
+					document.write("<a href=\"javascript:void(0);\" onClick=\"showHideDiv1('hotkey_box');\">▼熱鍵說明</a>");
+					-->
+				</script>
+				<div id="hotkey_box">A 切換模式<br />S 顯示隱藏資訊<br />D 顯示所有影片<br />F 開閉搜尋建議<br />R 隨機播放<br />Z 最前頁<br />X 上一頁<br />C 下一頁<br />V 最後頁</div>
+			</div>
+			<div id ="bottom_banner">
+					<br /><a href="http://blog.xuite.net/mimamima/avlist" target="_blank">AV List v2.15<br />&copy;2008-2015 written by Adam</a>
+			</div>
+		</div>
+	</div>
+	</body>
+</html>
